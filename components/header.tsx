@@ -1,37 +1,48 @@
 'use client'
 
 import Link from 'next/link'
-import { useSession } from '@/lib/auth-client'
+import { useSession, signOut } from '@/lib/auth-client'
 import { useRouter } from 'next/navigation'
-import { ShoppingCart, Heart, Menu, LogOut, User, BarChart3 } from 'lucide-react'
+import { ShoppingCart, Heart, Menu, LogOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useEffect, useState } from 'react'
 import { getCart } from '@/app/actions/cart'
+import { getWishlistItems } from '@/app/actions/wishlist'
 
 export function Header() {
   const { data: session } = useSession()
   const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
   const [cartCount, setCartCount] = useState(0)
+  const [wishlistCount, setWishlistCount] = useState(0)
 
-  useEffect(() => {
-    const updateCartCount = async () => {
+  const updateCounts = async () => {
+    if (session?.user) {
       try {
-        const cartItems = await getCart()
+        const [cartItems, wishlistItems] = await Promise.all([
+          getCart(),
+          getWishlistItems(),
+        ])
         setCartCount(cartItems.length)
+        setWishlistCount(wishlistItems.length)
       } catch (error) {
-        // Cart might be empty or error
+        console.error('Error fetching counts:', error)
       }
     }
-    if (session?.user) {
-      updateCartCount()
-    }
+  }
+
+  useEffect(() => {
+    updateCounts()
   }, [session?.user])
 
   const handleLogout = async () => {
-    await fetch('/api/auth/sign-out', { method: 'POST' })
-    router.push('/')
-    router.refresh()
+    try {
+      await signOut()
+      router.push('/')
+      router.refresh()
+    } catch (error) {
+      console.error('Logout error:', error)
+    }
   }
 
   return (
@@ -61,14 +72,19 @@ export function Header() {
 
           {/* Right Actions */}
           <div className="flex items-center gap-4">
-            {/* Wishlist */}
+            {/* Wishlist - hidden on mobile, visible on desktop with count */}
             {session?.user && (
-              <Link href="/wishlist" className="relative">
+              <Link href="/wishlist" className="relative hidden md:block">
                 <Heart className="h-5 w-5 text-foreground hover:text-primary transition-colors" />
+                {wishlistCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {wishlistCount}
+                  </span>
+                )}
               </Link>
             )}
 
-            {/* Cart */}
+            {/* Cart - visible on all views */}
             <Link href="/cart" className="relative">
               <ShoppingCart className="h-5 w-5 text-foreground hover:text-primary transition-colors" />
               {cartCount > 0 && (
@@ -78,15 +94,10 @@ export function Header() {
               )}
             </Link>
 
-            {/* Compare */}
-          <Link href="/compare" className="relative">
-            <BarChart3 className="h-5 w-5 text-foreground hover:text-primary transition-colors" />
-          </Link>
-
-          {/* Auth */}
+            {/* Auth - only on desktop */}
             {session?.user ? (
-              <div className="flex items-center gap-2">
-                <span className="hidden sm:inline text-sm text-muted-foreground">{session.user.email}</span>
+              <div className="hidden md:flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">{session.user.email}</span>
                 <button
                   onClick={handleLogout}
                   className="p-2 hover:bg-muted rounded-lg transition-colors"
@@ -96,14 +107,9 @@ export function Header() {
                 </button>
               </div>
             ) : (
-              <div className="flex items-center gap-2">
+              <div className="hidden md:flex items-center gap-2">
                 <Link href="/sign-in">
-                  <Button variant="outline" className="hidden sm:flex">
-                    Sign In
-                  </Button>
-                </Link>
-                <Link href="/sign-up" className="sm:hidden">
-                  <Button size="sm">Sign Up</Button>
+                  <Button variant="outline">Sign In</Button>
                 </Link>
               </div>
             )}
@@ -130,12 +136,22 @@ export function Header() {
             <Link href="#" className="text-foreground hover:text-primary transition-colors">
               About
             </Link>
-            {!session?.user && (
+            {session?.user ? (
               <>
-                <Link href="/sign-in" className="text-foreground hover:text-primary transition-colors">
-                  Sign In
+                <Link href="/wishlist" className="text-foreground hover:text-primary transition-colors">
+                  Wishlist
                 </Link>
+                <button
+                  onClick={handleLogout}
+                  className="text-left text-foreground hover:text-primary transition-colors"
+                >
+                  Sign Out
+                </button>
               </>
+            ) : (
+              <Link href="/sign-in" className="text-foreground hover:text-primary transition-colors">
+                Sign In
+              </Link>
             )}
           </nav>
         )}
