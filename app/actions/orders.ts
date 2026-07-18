@@ -2,9 +2,10 @@
 
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { orders, orderItems, payments, cart, products } from '@/lib/db/schema'
+import { orders, orderItems, payments, cart, products, user } from '@/lib/db/schema'
 import { eq, and, desc } from 'drizzle-orm'
 import { headers } from 'next/headers'
+import { sendOrderConfirmationEmail } from '@/lib/email'
 
 async function getUserId() {
   const session = await auth.api.getSession({ headers: await headers() })
@@ -46,6 +47,7 @@ export async function createOrder(
         .select()
         .from(products)
         .where(eq(products.id, item.productId))
+        .limit(1)
 
       if (product.length > 0) {
         await db.insert(orderItems).values({
@@ -67,6 +69,40 @@ export async function createOrder(
 
     // Clear cart
     await db.delete(cart).where(eq(cart.userId, userId))
+
+    // Get user info and items for email
+    const userInfo = await db
+      .select()
+      .from(user)
+      .where(eq(user.id, userId))
+      .limit(1)
+
+    const itemsWithEmail = await Promise.all(
+      items.map(async (item) => {
+        const product = await db
+          .select()
+          .from(products)
+          .where(eq(products.id, item.productId))
+          .limit(1)
+        return {
+          name: product[0]?.name || 'Product',
+          quantity: item.quantity,
+          price: Number(product[0]?.price || 0),
+        }
+      })
+    )
+
+    // Send confirmation email if user has email
+    if (userInfo[0]?.email) {
+      await sendOrderConfirmationEmail({
+        to: userInfo[0].email,
+        orderNumber,
+        customerName: userInfo[0].name || 'Customer',
+        items: itemsWithEmail,
+        total: Number(total),
+        shippingAddress: 'Shipping address pending',
+      })
+    }
 
     return { success: true, orderId, orderNumber }
   } catch (error) {

@@ -112,8 +112,7 @@ export default function CartPage() {
                     {/* Details */}
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-foreground mb-2">{item.product.name}</h3>
-                      <p className="text-primary font-bold mb-3">${item.product.price}</p>
-
+                      
                       {/* Quantity */}
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-muted-foreground">Qty:</span>
@@ -147,7 +146,7 @@ export default function CartPage() {
                     {/* Price & Remove */}
                     <div className="text-right flex-shrink-0">
                       <p className="text-lg font-bold text-foreground mb-4">
-                        ${(parseFloat(item.product.price) * item.quantity).toFixed(2)}
+                        KSH {(parseFloat(item.product.price) * item.quantity).toFixed(2)}
                       </p>
                       <button
                         onClick={() => handleRemove(item.id)}
@@ -169,11 +168,11 @@ export default function CartPage() {
                 <div className="space-y-3 mb-6 pb-6 border-b border-border">
                   <div className="flex justify-between text-foreground">
                     <span>Subtotal</span>
-                    <span>${subtotal.toFixed(2)}</span>
+                    <span>KSH {subtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-foreground">
                     <span>Tax (10%)</span>
-                    <span>${tax.toFixed(2)}</span>
+                    <span>KSH {tax.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-foreground">
                     <span>Shipping</span>
@@ -183,7 +182,7 @@ export default function CartPage() {
 
                 <div className="flex justify-between text-lg font-bold text-foreground mb-6">
                   <span>Total</span>
-                  <span className="text-primary">${total.toFixed(2)}</span>
+                  <span className="text-primary">KSH {total.toFixed(2)}</span>
                 </div>
 
                 <Link href="/checkout">

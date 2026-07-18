@@ -7,12 +7,13 @@ import { requireAdminAuth } from '@/lib/admin-auth'
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await requireAdminAuth()
+    await requireAdminAuth({ redirectOnFail: false })
 
-    const product = await getProductById(parseInt(params.id))
+    const { id } = await params
+    const product = await getProductById(id)
     if (!product) {
       return Response.json(
         { error: 'Product not found' },
@@ -21,50 +22,55 @@ export async function GET(
     }
 
     return Response.json(product)
-  } catch (error) {
+  } catch (error: any) {
     console.error('Get product error:', error)
+    const status = error.message === 'Unauthorized' || error.message === 'Forbidden' ? 403 : 500
     return Response.json(
-      { error: 'Unauthorized or internal error' },
-      { status: 403 }
+      { error: error.message || 'Failed' },
+      { status }
     )
   }
 }
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await requireAdminAuth()
+    await requireAdminAuth({ redirectOnFail: false })
 
+    const { id } = await params
     const body = await request.json()
-    await updateProduct(parseInt(params.id), body)
+    await updateProduct(id, body)
 
     return Response.json({ success: true })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Update product error:', error)
+    const status = error.message === 'Unauthorized' || error.message === 'Forbidden' ? 403 : 400
     return Response.json(
-      { error: 'Failed to update product' },
-      { status: 400 }
+      { error: error.message || 'Failed to update product' },
+      { status }
     )
   }
 }
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await requireAdminAuth()
+    await requireAdminAuth({ redirectOnFail: false })
 
-    await deleteProduct(parseInt(params.id))
+    const { id } = await params
+    await deleteProduct(id)
 
     return Response.json({ success: true })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Delete product error:', error)
+    const status = error.message === 'Unauthorized' || error.message === 'Forbidden' ? 403 : 400
     return Response.json(
-      { error: 'Failed to delete product' },
-      { status: 400 }
+      { error: error.message || 'Failed to delete product' },
+      { status }
     )
   }
 }

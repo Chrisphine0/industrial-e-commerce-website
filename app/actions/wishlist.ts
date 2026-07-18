@@ -1,19 +1,28 @@
 'use server'
 
-import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { wishlist, products } from '@/lib/db/schema'
 import { eq, and } from 'drizzle-orm'
-import { headers } from 'next/headers'
 
 async function getUserId() {
-  const session = await auth.api.getSession({ headers: await headers() })
-  if (!session?.user) throw new Error('Unauthorized')
-  return session.user.id
+  try {
+    // For server actions, we need to check if headers are available
+    // Use dynamic import to avoid issues during build
+    const { headers } = await import('next/headers')
+    const { auth } = await import('@/lib/auth')
+    
+    const headersList = await headers()
+    const session = await auth.api.getSession({ headers: headersList })
+    return session?.user?.id
+  } catch (error) {
+    // Return null if session check fails (timeout, no session, etc.)
+    return null
+  }
 }
 
 export async function addToWishlist(productId: number) {
   const userId = await getUserId()
+  if (!userId) throw new Error('Unauthorized')
 
   // Check if already in wishlist
   const existing = await db
@@ -39,6 +48,7 @@ export async function addToWishlist(productId: number) {
 
 export async function removeFromWishlist(productId: number) {
   const userId = await getUserId()
+  if (!userId) throw new Error('Unauthorized')
 
   await db
     .delete(wishlist)
@@ -53,6 +63,7 @@ export async function removeFromWishlist(productId: number) {
 export async function isInWishlist(productId: number): Promise<boolean> {
   try {
     const userId = await getUserId()
+    if (!userId) return false
 
     const result = await db
       .select()
@@ -71,6 +82,7 @@ export async function isInWishlist(productId: number): Promise<boolean> {
 
 export async function getWishlistItems() {
   const userId = await getUserId()
+  if (!userId) return []
 
   return await db
     .select({
@@ -98,6 +110,7 @@ export async function getWishlistItems() {
 export async function getWishlistCount(): Promise<number> {
   try {
     const userId = await getUserId()
+    if (!userId) return 0
 
     const result = await db
       .select()

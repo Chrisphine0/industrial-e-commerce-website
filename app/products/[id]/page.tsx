@@ -1,11 +1,9 @@
-'use client'
-
-import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { getProductById } from '@/app/actions/products'
-import { addToCart } from '@/app/actions/cart'
 import { Button } from '@/components/ui/button'
-import { Star, ArrowLeft, ShoppingCart } from 'lucide-react'
+import { Star, ArrowLeft } from 'lucide-react'
+import { ReviewsSection } from '@/components/reviews-section'
+import { AddToCartForm } from '@/components/add-to-cart-form'
 
 interface Product {
   id: number
@@ -14,58 +12,18 @@ interface Product {
   price: string
   oldPrice?: string
   imageUrl?: string
-  rating: number
+  rating: string
   reviewCount: number
   stock: number
   brand?: string
   sku?: string
 }
 
-export default function ProductPage({ params }: { params: { id: string } }) {
-  const [product, setProduct] = useState<Product | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [quantity, setQuantity] = useState(1)
-  const [addingToCart, setAddingToCart] = useState(false)
+export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const productData = await getProductById(parseInt(id))
 
-  useEffect(() => {
-    const loadProduct = async () => {
-      try {
-        const data = await getProductById(parseInt(params.id))
-        setProduct(data)
-      } catch (error) {
-        console.error('Error loading product:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    loadProduct()
-  }, [params.id])
-
-  const handleAddToCart = async () => {
-    setAddingToCart(true)
-    try {
-      await addToCart(product!.id, quantity)
-      // TODO: Show success toast
-      setQuantity(1)
-    } catch (error) {
-      console.error('Error adding to cart:', error)
-    } finally {
-      setAddingToCart(false)
-    }
-  }
-
-  if (loading) {
-    return (
-      <main className="min-h-screen bg-background py-12">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <p className="text-muted-foreground">Loading product...</p>
-        </div>
-      </main>
-    )
-  }
-
-  if (!product) {
+  if (!productData) {
     return (
       <main className="min-h-screen bg-background py-12">
         <div className="max-w-7xl mx-auto px-4">
@@ -81,6 +39,7 @@ export default function ProductPage({ params }: { params: { id: string } }) {
     )
   }
 
+  const product = productData as Product
   const discount = product.oldPrice
     ? Math.round(((parseFloat(product.oldPrice) - parseFloat(product.price)) / parseFloat(product.oldPrice)) * 100)
     : 0
@@ -96,15 +55,11 @@ export default function ProductPage({ params }: { params: { id: string } }) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
           {/* Image */}
           <div className="flex items-center justify-center bg-muted rounded-lg aspect-square p-8 relative">
-            {product.imageUrl ? (
-              <img
-                src={product.imageUrl}
-                alt={product.name}
-                className="w-full h-full object-contain"
-              />
-            ) : (
-              <div className="text-muted-foreground">No image</div>
-            )}
+            <img
+              src={product.imageUrl || '/placeholder.jpg'}
+              alt={product.name}
+              className="w-full h-full object-contain"
+            />
             {discount > 0 && (
               <div className="absolute top-4 right-4 bg-primary text-primary-foreground px-3 py-1 rounded-lg font-bold">
                 -{discount}%
@@ -130,21 +85,21 @@ export default function ProductPage({ params }: { params: { id: string } }) {
                   .map((_, i) => (
                     <Star
                       key={i}
-                      className={`h-5 w-5 ${i < Math.floor(product.rating) ? 'fill-primary text-primary' : 'text-border'}`}
+                      className={`h-5 w-5 ${i < Math.floor(Number(product.rating) || 0) ? 'fill-primary text-primary' : 'text-border'}`}
                     />
                   ))}
               </div>
               <span className="text-sm text-muted-foreground">
-                {product.rating} out of 5 ({product.reviewCount} reviews)
+                ({product.reviewCount || 0} reviews)
               </span>
             </div>
 
             {/* Pricing */}
             <div className="mb-6">
               <div className="flex items-baseline gap-4">
-                <span className="text-4xl font-bold text-primary">${product.price}</span>
+                <span className="text-4xl font-bold text-primary">KSH {product.price}</span>
                 {product.oldPrice && (
-                  <span className="text-xl text-muted-foreground line-through">${product.oldPrice}</span>
+                  <span className="text-xl text-muted-foreground line-through">KSH {product.oldPrice}</span>
                 )}
               </div>
             </div>
@@ -170,36 +125,8 @@ export default function ProductPage({ params }: { params: { id: string } }) {
               </div>
             </div>
 
-            {/* Quantity & Add to Cart */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-4">
-                <span className="text-foreground">Quantity:</span>
-                <div className="flex items-center border border-border rounded-lg">
-                  <button
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="px-3 py-2 hover:bg-muted transition-colors"
-                  >
-                    −
-                  </button>
-                  <span className="px-4 py-2 min-w-12 text-center">{quantity}</span>
-                  <button
-                    onClick={() => setQuantity(quantity + 1)}
-                    className="px-3 py-2 hover:bg-muted transition-colors"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-
-              <Button
-                onClick={handleAddToCart}
-                disabled={addingToCart || product.stock === 0}
-                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-12 font-semibold gap-2"
-              >
-                <ShoppingCart className="h-5 w-5" />
-                {addingToCart ? 'Adding...' : 'Add to Cart'}
-              </Button>
-            </div>
+            {/* Add to Cart Button */}
+            <AddToCartForm productId={product.id} stock={product.stock} />
 
             {/* Trust Badges */}
             <div className="mt-12 pt-8 border-t border-border">
@@ -209,6 +136,13 @@ export default function ProductPage({ params }: { params: { id: string } }) {
             </div>
           </div>
         </div>
+        
+        {/* Reviews Section */}
+        <ReviewsSection 
+          productId={product.id} 
+          avgRating={product.rating?.toString() || '0'}
+          reviewCount={product.reviewCount || 0}
+        />
       </div>
     </main>
   )

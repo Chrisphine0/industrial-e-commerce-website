@@ -42,15 +42,28 @@ export async function getCurrentAdminUser(): Promise<AdminUser | null> {
  * Check if the current user has admin access
  * Requires user to be authenticated and have admin/manager/warehouse_staff role
  */
-export async function requireAdminAuth(): Promise<AdminUser> {
+// Check if we're in an API route context (no HTML response expected)
+function isApiRoute(): boolean {
+  if (typeof process === 'undefined') return false
+  // In API routes, we can't redirect, so throw an error instead
+  return process.env.NEXT_RUNTIME === 'nodejs' || process.env.NEXT_PHASE === 'phase-production-build'
+}
+
+export async function requireAdminAuth(options?: { redirectOnFail?: boolean }): Promise<AdminUser> {
   const adminUser = await getCurrentAdminUser()
 
   if (!adminUser) {
+    if (options?.redirectOnFail === false) {
+      throw new Error('Unauthorized')
+    }
     redirect('/sign-in')
   }
 
   const adminRoles: UserRole[] = ['admin', 'manager', 'warehouse_staff']
   if (!adminRoles.includes(adminUser.role)) {
+    if (options?.redirectOnFail === false) {
+      throw new Error('Forbidden')
+    }
     redirect('/')
   }
 

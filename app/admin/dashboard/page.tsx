@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { AdminLayout } from '@/components/admin-layout'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -9,10 +10,12 @@ import {
   ShoppingCart,
   AlertCircle,
   TrendingUp,
+  Package,
+  Users,
 } from 'lucide-react'
 
 interface DashboardStats {
-  totalRevenue: number
+  totalRevenue: string | number
   totalOrders: number
   ordersByStatus: Array<{ status: string; count: number }>
   lowStockProducts: Array<{ id: number; name: string; stock: number }>
@@ -38,6 +41,11 @@ export default function AdminDashboard() {
     loadStats()
   }, [])
 
+  const formatRevenue = (value: string | number | undefined) => {
+    const num = Number(value || 0)
+    return num.toFixed(2)
+  }
+
   return (
     <AdminLayout userName="Admin User" userRole="admin">
       <div className="space-y-8">
@@ -59,7 +67,7 @@ export default function AdminDashboard() {
                   <div className="h-8 bg-muted rounded mt-2 animate-pulse" />
                 ) : (
                   <p className="text-2xl font-bold mt-2">
-                    ${(stats?.totalRevenue || 0).toFixed(2)}
+                    KSH {formatRevenue(stats?.totalRevenue)}
                   </p>
                 )}
               </div>
@@ -96,14 +104,14 @@ export default function AdminDashboard() {
                 <div className="h-8 bg-muted rounded mt-2 animate-pulse" />
               ) : (
                 <div className="mt-3 space-y-1 text-sm">
-                  {stats?.ordersByStatus.slice(0, 2).map((status) => (
+                  {stats && stats.ordersByStatus ? stats.ordersByStatus.slice(0, 2).map((status) => (
                     <p key={status.status}>
                       <span className="capitalize font-medium">
                         {status.status}:
                       </span>{' '}
                       {status.count}
                     </p>
-                  ))}
+                  )) : null}
                 </div>
               )}
             </div>
@@ -118,7 +126,7 @@ export default function AdminDashboard() {
                   <div className="h-8 bg-muted rounded mt-2 animate-pulse" />
                 ) : (
                   <p className="text-2xl font-bold mt-2">
-                    {stats?.lowStockProducts.length || 0}
+                    {stats?.lowStockProducts?.length || 0}
                   </p>
                 )}
               </div>
@@ -142,7 +150,7 @@ export default function AdminDashboard() {
                 <div key={i} className="h-12 bg-muted rounded animate-pulse" />
               ))}
             </div>
-          ) : stats?.lowStockProducts && stats.lowStockProducts.length > 0 ? (
+          ) : stats && stats.lowStockProducts && stats.lowStockProducts.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -187,42 +195,27 @@ export default function AdminDashboard() {
         <Card className="p-6">
           <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Button
-              asChild
-              variant="outline"
-              className="justify-start"
-            >
-              <a href="/admin/products">
+            <Link href="/admin/products">
+              <Button variant="outline" className="w-full justify-start">
                 <Package className="h-4 w-4 mr-2" />
                 Manage Products
-              </a>
-            </Button>
-            <Button
-              asChild
-              variant="outline"
-              className="justify-start"
-            >
-              <a href="/admin/orders">
+              </Button>
+            </Link>
+            <Link href="/admin/orders">
+              <Button variant="outline" className="w-full justify-start">
                 <ShoppingCart className="h-4 w-4 mr-2" />
                 View Orders
-              </a>
-            </Button>
-            <Button
-              asChild
-              variant="outline"
-              className="justify-start"
-            >
-              <a href="/admin/customers">
+              </Button>
+            </Link>
+            <Link href="/admin/customers">
+              <Button variant="outline" className="w-full justify-start">
                 <Users className="h-4 w-4 mr-2" />
                 View Customers
-              </a>
-            </Button>
+              </Button>
+            </Link>
           </div>
         </Card>
       </div>
     </AdminLayout>
   )
 }
-
-// Import icons
-import { Package, Users } from 'lucide-react'

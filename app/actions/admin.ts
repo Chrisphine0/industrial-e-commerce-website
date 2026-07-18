@@ -7,6 +7,7 @@ import {
   orders,
   orderItems,
   adminLogs,
+  user,
 } from '@/lib/db/schema'
 import {
   requireAdminAuth,
@@ -14,8 +15,10 @@ import {
   logAdminAction,
   canPerformAction,
 } from '@/lib/admin-auth'
-import { eq, and, desc, ilike, asc } from 'drizzle-orm'
+import { eq, and, desc, asc } from 'drizzle-orm'
+import { sql } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
+import { sendOrderShippedEmail, sendOrderDeliveredEmail } from '@/lib/email'
 
 // ============================================================================
 // PRODUCT MANAGEMENT
@@ -43,7 +46,7 @@ export async function getAdminProducts(search?: string) {
 
   if (search) {
     query = query.where(
-      ilike(products.name, `%${search}%`)
+      sql`${products.name} ILIKE ${'%' + search + '%'}`
     ) as any
   }
 
@@ -76,6 +79,7 @@ export async function updateProduct(
     stock?: number
     availability?: boolean
     categoryId?: number
+    imageUrl?: string
   }
 ) {
   const adminUser = await requireAdminAuth()
@@ -113,6 +117,7 @@ export async function createProduct(data: {
   oldPrice?: string
   categoryId?: number
   stock?: number
+  imageUrl?: string
 }) {
   const adminUser = await requireAdminAuth()
 
@@ -267,6 +272,31 @@ export async function updateOrderStatus(
     `Changed status from ${order[0].status} to ${newStatus}`
   )
 
+  // Send email notifications
+  const orderUser = await db
+    .select()
+    .from(user)
+    .where(eq(user.id, order[0].userId))
+    .limit(1)
+
+  if (orderUser[0]?.email) {
+    if (newStatus === 'shipped') {
+      await sendOrderShippedEmail({
+        to: orderUser[0].email,
+        orderNumber: order[0].orderNumber,
+        customerName: orderUser[0].name || 'Customer',
+      })
+    }
+
+    if (newStatus === 'delivered') {
+      await sendOrderDeliveredEmail({
+        to: orderUser[0].email,
+        orderNumber: order[0].orderNumber,
+        customerName: orderUser[0].name || 'Customer',
+      })
+    }
+  }
+
   revalidatePath('/admin/orders')
 }
 
@@ -283,25 +313,24 @@ export async function getDashboardStats() {
 
   // Total revenue
   const revenueResult = await db.execute(
-    'SELECT SUM(CAST(total AS DECIMAL)) as total_revenue FROM orders WHERE status != $1',
-    ['cancelled']
+    sql`SELECT SUM(CAST(total AS DECIMAL)) as total_revenue FROM orders WHERE status != 'cancelled'`
   )
 
   // Total orders
   const ordersResult = await db.execute(
-    'SELECT COUNT(*) as order_count FROM orders'
+    sql`SELECT COUNT(*) as order_count FROM orders`
   )
 
   // Orders by status
   const statusResult = await db.execute(
-    'SELECT status, COUNT(*) as count FROM orders GROUP BY status'
+    sql`SELECT status, COUNT(*) as count FROM orders GROUP BY status`
   )
 
   // Low stock products
   const lowStockResult = await db
     .select()
     .from(products)
-    .where(ilike(products.stock as any, '10'))
+    .where(sql`${products.stock} <= 10`)
     .orderBy(asc(products.stock))
     .limit(5)
 

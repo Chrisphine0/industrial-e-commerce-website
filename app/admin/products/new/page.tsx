@@ -6,12 +6,14 @@ import { AdminLayout } from '@/components/admin-layout'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Upload } from 'lucide-react'
 import Link from 'next/link'
+import { CldUploadWidget } from 'next-cloudinary'
 
 export default function NewProductPage() {
   const router = useRouter()
   const [saving, setSaving] = useState(false)
+  const [imageUrl, setImageUrl] = useState('')
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -38,7 +40,7 @@ export default function NewProductPage() {
       const response = await fetch('/api/admin/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...formData, imageUrl }),
       })
 
       if (response.ok) {
@@ -74,6 +76,43 @@ export default function NewProductPage() {
 
         <Card className="p-8">
           <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl">
+            {/* Product Image */}
+            <div className="space-y-4">
+              <h3 className="font-semibold">Product Image</h3>
+              <CldUploadWidget
+                uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
+                onSuccess={(results) => {
+                  const url = (results.info as { secure_url?: string })?.secure_url
+                  if (url) setImageUrl(url)
+                }}
+                options={{
+                  folder: 'products',
+                  maxFileSize: 5000000,
+                  resourceType: 'image',
+                }}
+              >
+                {({ open }) => (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => open()}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload Image
+                  </Button>
+                )}
+              </CldUploadWidget>
+              {imageUrl && (
+                <div className="mt-2">
+                  <img
+                    src={imageUrl}
+                    alt="Product preview"
+                    className="h-32 w-32 object-cover rounded border"
+                  />
+                </div>
+              )}
+            </div>
+
             {/* Basic Info */}
             <div className="space-y-4">
               <h3 className="font-semibold">Basic Information</h3>

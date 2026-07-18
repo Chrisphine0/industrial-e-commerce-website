@@ -1,13 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
 import { AdminLayout } from '@/components/admin-layout'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Upload } from 'lucide-react'
 import Link from 'next/link'
+import { CldUploadWidget } from 'next-cloudinary'
 
 interface Product {
   id: number
@@ -18,26 +19,32 @@ interface Product {
   price: string
   oldPrice?: string
   categoryId?: number
+  imageUrl?: string
   stock: number
   availability: boolean
 }
 
-export default function EditProductPage({ params }: { params: { id: string } }) {
+export default function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
+  const resolvedParams = use(params)
+  const productId = resolvedParams.id
+  
   const [product, setProduct] = useState<Product | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [imageUrl, setImageUrl] = useState('')
   const [formData, setFormData] = useState<Partial<Product>>({})
 
   useEffect(() => {
     const loadProduct = async () => {
       try {
         setLoading(true)
-        const response = await fetch(`/api/admin/products/${params.id}`)
+        const response = await fetch(`/api/admin/products/${productId}`)
         if (response.ok) {
           const data = await response.json()
           setProduct(data)
           setFormData(data)
+          setImageUrl(data.imageUrl || '')
         }
       } catch (error) {
         console.error('Failed to load product:', error)
@@ -47,7 +54,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
     }
 
     loadProduct()
-  }, [params.id])
+  }, [productId])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target
@@ -65,10 +72,10 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
     setSaving(true)
 
     try {
-      const response = await fetch(`/api/admin/products/${params.id}`, {
+      const response = await fetch(`/api/admin/products/${productId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...formData, imageUrl }),
       })
 
       if (response.ok) {
@@ -130,6 +137,43 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
 
         <Card className="p-8">
           <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl">
+            {/* Product Image */}
+            <div className="space-y-4">
+              <h3 className="font-semibold">Product Image</h3>
+              <CldUploadWidget
+                uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
+                onSuccess={(results) => {
+                  const url = (results.info as { secure_url?: string })?.secure_url
+                  if (url) setImageUrl(url)
+                }}
+                options={{
+                  folder: 'products',
+                  maxFileSize: 5000000,
+                  resourceType: 'image',
+                }}
+              >
+                {({ open }) => (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => open()}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload Image
+                  </Button>
+                )}
+              </CldUploadWidget>
+              {imageUrl && (
+                <div className="mt-2">
+                  <img
+                    src={imageUrl}
+                    alt="Product preview"
+                    className="h-32 w-32 object-cover rounded border"
+                  />
+                </div>
+              )}
+            </div>
+
             {/* Basic Info */}
             <div className="space-y-4">
               <h3 className="font-semibold">Basic Information</h3>

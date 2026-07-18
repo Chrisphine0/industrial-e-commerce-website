@@ -24,7 +24,12 @@ export default function AdminCustomersPage() {
         setLoading(true)
         const response = await fetch('/api/admin/customers')
         const data = await response.json()
-        setCustomers(data)
+        // Handle error response or array response
+        if (Array.isArray(data)) {
+          setCustomers(data)
+        } else {
+          setCustomers([])
+        }
       } catch (error) {
         console.error('Failed to load customers:', error)
       } finally {
@@ -87,7 +92,7 @@ export default function AdminCustomersPage() {
                       </td>
                       <td className="text-right py-4 px-6">{customer.orderCount}</td>
                       <td className="text-right py-4 px-6 font-medium">
-                        ${customer.totalSpent.toFixed(2)}
+                        KSH {customer.totalSpent.toFixed(2)}
                       </td>
                       <td className="py-4 px-6 text-muted-foreground text-xs">
                         {new Date(customer.createdAt).toLocaleDateString()}

@@ -18,8 +18,12 @@ export function WishlistButton({ productId, className, showText = false }: Wishl
 
   useEffect(() => {
     const checkWishlist = async () => {
-      const result = await isInWishlist(productId)
-      setInWishlist(result)
+      try {
+        const result = await isInWishlist(productId)
+        setInWishlist(result)
+      } catch (error) {
+        console.warn('Wishlist check failed:', error)
+      }
     }
 
     checkWishlist()

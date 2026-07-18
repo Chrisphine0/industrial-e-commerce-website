@@ -3,14 +3,30 @@
 import Link from 'next/link'
 import { useSession } from '@/lib/auth-client'
 import { useRouter } from 'next/navigation'
-import { ShoppingCart, Heart, Menu, LogOut, User } from 'lucide-react'
+import { ShoppingCart, Heart, Menu, LogOut, User, BarChart3 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { getCart } from '@/app/actions/cart'
 
 export function Header() {
   const { data: session } = useSession()
   const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
+  const [cartCount, setCartCount] = useState(0)
+
+  useEffect(() => {
+    const updateCartCount = async () => {
+      try {
+        const cartItems = await getCart()
+        setCartCount(cartItems.length)
+      } catch (error) {
+        // Cart might be empty or error
+      }
+    }
+    if (session?.user) {
+      updateCartCount()
+    }
+  }, [session?.user])
 
   const handleLogout = async () => {
     await fetch('/api/auth/sign-out', { method: 'POST' })
@@ -55,9 +71,19 @@ export function Header() {
             {/* Cart */}
             <Link href="/cart" className="relative">
               <ShoppingCart className="h-5 w-5 text-foreground hover:text-primary transition-colors" />
+              {cartCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                  {cartCount}
+                </span>
+              )}
             </Link>
 
-            {/* Auth */}
+            {/* Compare */}
+          <Link href="/compare" className="relative">
+            <BarChart3 className="h-5 w-5 text-foreground hover:text-primary transition-colors" />
+          </Link>
+
+          {/* Auth */}
             {session?.user ? (
               <div className="flex items-center gap-2">
                 <span className="hidden sm:inline text-sm text-muted-foreground">{session.user.email}</span>

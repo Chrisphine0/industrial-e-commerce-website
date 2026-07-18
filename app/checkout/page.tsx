@@ -319,7 +319,7 @@ export default function CheckoutPage() {
                     <span>
                       {item.product.name} x {item.quantity}
                     </span>
-                    <span>${(parseFloat(item.product.price) * item.quantity).toFixed(2)}</span>
+                    <span>KSH {(parseFloat(item.product.price) * item.quantity).toFixed(2)}</span>
                   </div>
                 ))}
               </div>
@@ -327,11 +327,11 @@ export default function CheckoutPage() {
               <div className="space-y-3 mb-6 pb-6 border-b border-border">
                 <div className="flex justify-between text-foreground">
                   <span>Subtotal</span>
-                  <span>${subtotal.toFixed(2)}</span>
+                  <span>KSH {subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-foreground">
                   <span>Tax (10%)</span>
-                  <span>${tax.toFixed(2)}</span>
+                  <span>KSH {tax.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-foreground">
                   <span>Shipping</span>
@@ -341,7 +341,7 @@ export default function CheckoutPage() {
 
               <div className="flex justify-between text-lg font-bold text-foreground">
                 <span>Total</span>
-                <span className="text-primary">${total.toFixed(2)}</span>
+                <span className="text-primary">KSH {total.toFixed(2)}</span>
               </div>
             </div>
           </div>

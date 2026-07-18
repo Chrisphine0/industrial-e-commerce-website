@@ -13,6 +13,7 @@ import {
   LogOut,
   Menu,
   X,
+  MessageSquare,
 } from 'lucide-react'
 
 interface AdminLayoutProps {
@@ -49,6 +50,11 @@ export function AdminLayout({
       label: 'Customers',
       href: '/admin/customers',
       icon: Users,
+    },
+    {
+      label: 'Reviews',
+      href: '/admin/reviews',
+      icon: MessageSquare,
     },
   ]
 

@@ -6,6 +6,8 @@ import { Star, ShoppingCart } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { WishlistButton } from '@/components/wishlist-button'
 import { addToCart } from '@/app/actions/cart'
+import { ComparisonButton } from '@/components/comparison-button'
+import { ProductImage } from '@/components/product-image'
 
 interface ProductCardProps {
   id: number
@@ -51,23 +53,20 @@ export function ProductCard({
       {/* Image Container */}
       <Link href={`/products/${id}`} className="relative overflow-hidden bg-muted">
         <div className="aspect-square w-full bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center">
-          {imageUrl ? (
-            <img
-              src={imageUrl}
-              alt={name}
-              className="h-full w-full object-cover transition-transform group-hover:scale-105"
-            />
-          ) : (
-            <div className="text-muted-foreground text-sm">No image</div>
-          )}
+          <ProductImage
+            src={imageUrl}
+            alt={name}
+            className="h-full w-full object-cover transition-transform group-hover:scale-105"
+          />
         </div>
         {discount > 0 && (
           <div className="absolute top-2 right-2 bg-primary text-primary-foreground px-2 py-1 rounded text-sm font-semibold">
             -{discount}%
           </div>
         )}
-        <div className="absolute top-2 left-2">
+        <div className="absolute top-2 left-2 flex gap-1">
           <WishlistButton productId={id} />
+          <ComparisonButton productId={id} />
         </div>
       </Link>
 
@@ -100,9 +99,9 @@ export function ProductCard({
 
         {/* Pricing */}
         <div className="mb-4 flex items-baseline gap-2">
-          <span className="text-lg font-bold text-primary">${price}</span>
+          <span className="text-lg font-bold text-primary">KSH {price}</span>
           {oldPrice && (
-            <span className="text-sm text-muted-foreground line-through">${oldPrice}</span>
+            <span className="text-sm text-muted-foreground line-through">KSH {oldPrice}</span>
           )}
         </div>
 

@@ -32,7 +32,12 @@ export default function AdminProductsPage() {
           `/api/admin/products?search=${encodeURIComponent(search)}`
         )
         const data = await response.json()
-        setProducts(data)
+        // Handle error response or array response
+        if (Array.isArray(data)) {
+          setProducts(data)
+        } else {
+          setProducts([])
+        }
       } catch (error) {
         console.error('Failed to load products:', error)
       } finally {

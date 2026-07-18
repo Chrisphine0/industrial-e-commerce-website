@@ -1,14 +1,23 @@
 'use server'
 
-import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { cart, products } from '@/lib/db/schema'
 import { eq, and } from 'drizzle-orm'
-import { headers } from 'next/headers'
 
 async function getUserId() {
-  const session = await auth.api.getSession({ headers: await headers() })
-  return session?.user?.id
+  try {
+    // For server actions, we need to check if headers are available
+    // Use dynamic import to avoid issues during build
+    const { headers } = await import('next/headers')
+    const { auth } = await import('@/lib/auth')
+    
+    const headersList = await headers()
+    const session = await auth.api.getSession({ headers: headersList })
+    return session?.user?.id
+  } catch (error) {
+    // Return null if session check fails (timeout, no session, etc.)
+    return null
+  }
 }
 
 export async function getCart() {
