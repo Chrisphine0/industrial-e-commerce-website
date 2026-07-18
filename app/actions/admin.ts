@@ -61,7 +61,19 @@ export async function getProductById(productId: number) {
   }
 
   const result = await db
-    .select()
+    .select({
+      id: products.id,
+      name: products.name,
+      description: products.description,
+      sku: products.sku,
+      brand: products.brand,
+      price: products.price,
+      oldPrice: products.oldPrice,
+      categoryId: products.categoryId,
+      imageUrl: products.imageUrl,
+      stock: products.stock,
+      availability: products.availability,
+    })
     .from(products)
     .where(eq(products.id, productId))
     .limit(1)
@@ -75,7 +87,7 @@ export async function updateProduct(
     name?: string
     description?: string
     price?: string
-    oldPrice?: string
+    oldPrice?: string | null
     stock?: number
     availability?: boolean
     categoryId?: number
@@ -88,12 +100,20 @@ export async function updateProduct(
     throw new Error('Unauthorized')
   }
 
+  // Build update values, handling oldPrice properly (null when empty/undefined)
+  const updateValues: any = {
+    ...data,
+    updatedAt: new Date(),
+  }
+
+  // Convert empty oldPrice string to null
+  if (data.oldPrice === '' || data.oldPrice === undefined) {
+    updateValues.oldPrice = null
+  }
+
   await db
     .update(products)
-    .set({
-      ...data,
-      updatedAt: new Date(),
-    })
+    .set(updateValues)
     .where(eq(products.id, productId))
 
   await logAdminAction(

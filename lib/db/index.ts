@@ -1,14 +1,22 @@
-import { neon } from '@neondatabase/serverless'
-import { drizzle } from 'drizzle-orm/neon-http'
 import { Pool } from 'pg'
+import { drizzle } from 'drizzle-orm/node-postgres'
 import * as schema from './schema'
 
-// For Better Auth (uses PG pool)
+// Use unpooled connection for both app and seeds
+// This is required for prepared statements and long-running operations
+// Falls back to DATABASE_URL if DIRECT_URL or DATABASE_URL_UNPOOLED not set
+const connectionString = process.env.DIRECT_URL || process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL
+
+// For Better Auth (uses PG pool) and Drizzle ORM
+// Using node-postgres directly with unpooled connection
 export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString,
+  // Connection pool settings optimized for Neon serverless
+  max: 5,                    // Limit connections for Neon
+  min: 0,                    // Allow pool to shrink to 0
+  idleTimeoutMillis: 30000,  // 30s idle timeout
+  connectionTimeoutMillis: 60000, // 60s connection timeout for Neon wake-up
 })
 
-// For Drizzle ORM queries - fetchConnectionCache is now always true by default
-export const sql = neon(process.env.DATABASE_URL!)
-export const db = drizzle(sql, { schema })
-```
+// Drizzle ORM with node-postgres (full transaction support)
+export const db = drizzle(pool, { schema })

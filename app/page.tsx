@@ -39,8 +39,8 @@ export default function HomePage() {
           getProducts(searchQuery, selectedCategory || undefined),
           getCategories(),
         ])
-        setProducts(productsData)
-        setCategories(categoriesData)
+        setProducts(productsData || [])
+        setCategories(categoriesData || [])
       } catch (error) {
         console.error('Error loading data:', error)
       } finally {
@@ -68,11 +68,9 @@ export default function HomePage() {
                 placeholder="Search tools, equipment..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-4 pr-12 h-12 border-0 rounded-lg"
+                className="pl-4 pr-12 h-12 border-0 rounded-lg text-foreground"
               />
-              <button className="absolute right-3 top-1/2 -translate-y-1/2">
-                <Search className="h-5 w-5 text-primary" />
-              </button>
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-primary" />
             </div>
           </div>
         </div>
